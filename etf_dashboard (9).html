@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETF Model Portfolio Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5f3ef;--surface:#fff;--surface2:#f0ede8;--border:#e2ddd6;--text:#1a1714;--muted:#7a7068;
+  --ag:#1a3a5c;--ag-light:#e8f0f8;--mg:#1a4a2e;--mg-light:#e8f5ed;
+  --ig:#5c3a0a;--ig-light:#fdf0e0;--bench:#3a1a5c;--bench-light:#f0e8f8;
+  --green:#1a7a3a;--red:#b83232;
+  --font-display:"DM Serif Display",serif;--font-body:"DM Sans",sans-serif;--font-mono:"DM Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
+.masthead{background:var(--text);color:#f5f3ef;padding:20px 32px 16px;display:flex;align-items:flex-end;justify-content:space-between;}
+.masthead h1{font-family:var(--font-display);font-size:24px;font-weight:400;line-height:1;}
+.masthead p{font-size:11px;color:#a89e94;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;}
+.masthead-right{font-size:10px;color:#a89e94;text-align:right;font-family:var(--font-mono);}
+.strategy-nav{background:var(--text);border-top:1px solid #2e2a26;display:flex;padding:0 32px;overflow-x:auto;}
+.snav-tab{padding:10px 16px;font-size:11px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:#6b6058;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font-body);white-space:nowrap;}
+.snav-tab:hover{color:#c8b89a;}
+.snav-tab.active-ag{color:#7ab3e0;border-color:#7ab3e0;}
+.snav-tab.active-mg{color:#7aca9a;border-color:#7aca9a;}
+.snav-tab.active-ig{color:#e0b06a;border-color:#e0b06a;}
+.snav-tab.active-bench{color:#b07ae0;border-color:#b07ae0;}
+.main{padding:24px 32px;}
+.panel{display:none;}.panel.active{display:block;}
+.section-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:28px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.section-label::before{content:"";width:16px;height:1px;}
+.section-label.ag::before{background:var(--ag)}.section-label.mg::before{background:var(--mg)}
+.section-label.ig::before{background:var(--ig)}.section-label.bench::before{background:var(--bench)}
+.holdings-table{width:100%;border-collapse:collapse;font-size:12px;}
+.holdings-table th{text-align:left;padding:7px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.holdings-table td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5;}
+.holdings-table tr:last-child td{border-bottom:none;}
+.holdings-table tr:hover td{background:var(--surface2);}
+.tk{font-family:var(--font-mono);font-size:11px;font-weight:500;}
+.wt-cell{font-family:var(--font-mono);font-weight:500;text-align:right;}
+.fund-name-sm{font-size:10px;color:var(--muted);margin-top:2px;}
+.rat-text{font-size:11px;color:var(--muted);line-height:1.55;}
+.total-row td{font-weight:600;font-family:var(--font-mono);font-size:11px;background:var(--surface2);}
+.fund-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
+.fund-card{background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+.fund-card-head{padding:12px 14px 9px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;}
+.fund-card-ticker{font-family:var(--font-mono);font-size:14px;font-weight:500;}
+.fund-card-name{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4;}
+.fund-theme-tag{font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 7px;border-radius:2px;white-space:nowrap;margin-left:8px;}
+.fund-bb{display:grid;grid-template-columns:1fr 1fr;}
+.bb-pane{padding:10px 14px;}
+.bb-pane.bull{border-right:1px solid var(--border);}
+.bb-pane strong{font-size:9px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px;}
+.bb-pane.bull strong{color:var(--green)}.bb-pane.bear strong{color:var(--red)}
+.bb-pane p{font-size:11px;color:var(--muted);line-height:1.5;}
+.signals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+.signal-card{background:var(--surface);border:1px solid var(--border);border-radius:2px;}
+.signal-card-head{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.signal-ticker{font-family:var(--font-mono);font-size:12px;font-weight:500;}
+.signal-category{font-size:9px;font-weight:600;letter-spacing:.5px;padding:2px 6px;border-radius:2px;}
+.signal-body{padding:10px 14px;display:flex;flex-direction:column;gap:9px;}
+.signal-item{display:flex;gap:8px;}
+.signal-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;margin-top:1px;}
+.signal-icon.watch{background:#fef3cd;color:#856404}
+.signal-icon.confirm{background:#d1edda;color:#145523}
+.signal-icon.risk{background:#fde8e8;color:#8b1a1a}
+.signal-text strong{font-size:11px;font-weight:600;display:block;margin-bottom:2px;}
+.signal-text p{font-size:10px;color:var(--muted);line-height:1.5;}
+.ag .fund-theme-tag{background:var(--ag-light);color:var(--ag)}
+.mg .fund-theme-tag{background:var(--mg-light);color:var(--mg)}
+.ig .fund-theme-tag{background:var(--ig-light);color:var(--ig)}
+.bench .fund-theme-tag{background:var(--bench-light);color:var(--bench)}
+.ag .signal-category{background:var(--ag-light);color:var(--ag)}
+.mg .signal-category{background:var(--mg-light);color:var(--mg)}
+.ig .signal-category{background:var(--ig-light);color:var(--ig)}
+.bench .signal-category{background:var(--bench-light);color:var(--bench)}
+</style>
+</head>
+<body>
+<div class="masthead">
+  <div><h1>ETF Model Portfolios</h1><p>Private Wealth — Thematic Strategy Dashboard</p></div>
+  <div class="masthead-right"><div id="live-date"></div><div style="margin-top:3px">4 Strategies · 32 Holdings</div></div>
+</div>
+<div class="strategy-nav">
+  <button class="snav-tab active-ag" onclick="switchPanel('ag',this)">Aggressive Growth</button>
+  <button class="snav-tab" onclick="switchPanel('mg',this)">Moderate Growth</button>
+  <button class="snav-tab" onclick="switchPanel('ig',this)">Income &amp; Growth</button>
+  <button class="snav-tab" onclick="switchPanel('bench',this)">Bench List</button>
+</div>
+<div class="main">
+
+<div class="panel active ag" id="panel-ag">
+  <div class="section-label ag">Holdings</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden">
+    <table class="holdings-table">
+      <thead><tr><th>Ticker</th><th>Fund Name</th><th>Theme / Asset Class</th><th style="text-align:right">Weight</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tk">BPAIX</span></td><td><div>Boston Partners All-Cap Value Fund</div><div class="fund-name-sm">Institutional Class</div></td><td>Active All-Cap Value — Quality Anchor</td><td class="wt-cell">15.0%</td><td class="rat-text">Quality-value anchor providing defensiveness and ballast in an otherwise high-beta aggressive growth portfolio. Boston Partners' rigorous three-factor screen adds a return-smoothing dimension to the strategy.</td></tr>
+        <tr><td><span class="tk">QQQ</span></td><td><div>Invesco QQQ Trust</div><div class="fund-name-sm">Nasdaq-100 Index</div></td><td>US Mega-Cap Growth — Core</td><td class="wt-cell">15.0%</td><td class="rat-text">Core growth engine. Nasdaq-100 concentration in AI, cloud, and software compounders — NVDA, MSFT, AAPL, META. Highest-conviction position for an aggressive mandate with a 10+ year horizon.</td></tr>
+        <tr><td><span class="tk">IWM</span></td><td><div>iShares Russell 2000 ETF</div><div class="fund-name-sm">Russell 2000 Index</div></td><td>US Small Cap Equity</td><td class="wt-cell">8.75%</td><td class="rat-text">Small cap premium over long horizons. Domestic revenue base buffers USD strength and global macro volatility.</td></tr>
+        <tr><td><span class="tk">EFA</span></td><td><div>iShares MSCI EAFE ETF</div><div class="fund-name-sm">MSCI EAFE Index</div></td><td>International Developed Markets</td><td class="wt-cell">8.75%</td><td class="rat-text">Geographic diversification across 21 developed markets. Valuation support in Europe and Japan provides long-term mean-reversion optionality.</td></tr>
+        <tr><td><span class="tk">IEMG</span></td><td><div>iShares Core MSCI EM ETF</div><div class="fund-name-sm">MSCI EM IMI Index</div></td><td>Emerging Markets</td><td class="wt-cell">8.75%</td><td class="rat-text">Low-cost EM exposure at 0.09% ER. Small cap sleeve accesses domestic consumption growth in India and SE Asia directly.</td></tr>
+        <tr><td><span class="tk">VOLT</span></td><td><div>Tema Electrification ETF</div><div class="fund-name-sm">Electrification Theme</div></td><td>Electrification / Power Grid</td><td class="wt-cell">8.75%</td><td class="rat-text">Multi-decade electrification thesis — EV infrastructure, grid modernization, AI data center power demand. Monitor AUM given fund is sub-$100M.</td></tr>
+        <tr><td><span class="tk">ROBO</span></td><td><div>ROBO Global Robotics &amp; Automation ETF</div><div class="fund-name-sm">ROBO Global Index</div></td><td>Robotics &amp; Automation</td><td class="wt-cell">8.75%</td><td class="rat-text">Secular automation tailwind driven by rising labor costs and manufacturing reshoring. Broad global exposure across robotics, AI, and industrial automation.</td></tr>
+        <tr><td><span class="tk">XBI</span></td><td><div>SPDR S&amp;P Biotech ETF</div><div class="fund-name-sm">S&amp;P Biotech Select Industry</div></td><td>Biotech &amp; Life Sciences</td><td class="wt-cell">8.75%</td><td class="rat-text">Equal-weight structure captures early-stage biotech upside — GLP-1, gene editing, cell therapy, and AI-accelerated drug discovery.</td></tr>
+        <tr><td><span class="tk">XPH</span></td><td><div>SPDR S&amp;P Pharmaceuticals ETF</div><div class="fund-name-sm">S&amp;P Pharmaceuticals Select Industry</div></td><td>Pharmaceuticals</td><td class="wt-cell">8.75%</td><td class="rat-text">Aging demographic tailwind and GLP-1 pipeline strength. Lower-volatility complement to XBI's early-stage biotech exposure.</td></tr>
+        <tr><td><span class="tk">GLD</span></td><td><div>SPDR Gold Shares</div><div class="fund-name-sm">Gold Spot Price</div></td><td>Gold — Tail Hedge</td><td class="wt-cell">8.75%</td><td class="rat-text">Store of value with structural support from central bank buying and de-dollarization. Portfolio stabilizer during equity dislocations.</td></tr>
+        <tr class="total-row"><td colspan="3">TOTAL</td><td class="wt-cell">100.0%</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section-label ag">Fund Selection Review</div>
+  <div class="fund-grid" id="cards-ag"></div>
+  <div class="section-label ag">Monitoring Signals</div>
+  <div class="signals-grid" id="signals-ag"></div>
+</div>
+
+<div class="panel mg" id="panel-mg">
+  <div class="section-label mg">Holdings</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden">
+    <table class="holdings-table">
+      <thead><tr><th>Ticker</th><th>Fund Name</th><th>Theme / Asset Class</th><th style="text-align:right">Weight</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tk">BPAIX</span></td><td><div>Boston Partners All-Cap Value Fund</div><div class="fund-name-sm">Institutional Class</div></td><td>Active All-Cap Value — Core</td><td class="wt-cell">30.0%</td><td class="rat-text">Quality-value anchor. Boston Partners' all-cap mandate and quality screen prioritizes high-return, financially sound businesses across market cap sizes.</td></tr>
+        <tr><td><span class="tk">QQQ</span></td><td><div>Invesco QQQ Trust</div><div class="fund-name-sm">Nasdaq-100 Index</div></td><td>US Mega-Cap Growth — Growth Complement</td><td class="wt-cell">20.0%</td><td class="rat-text">Growth complement to BPAIX's value anchor. Nasdaq-100 ensures the strategy participates in secular AI, cloud, and software-driven growth.</td></tr>
+        <tr><td><span class="tk">IWM</span></td><td><div>iShares Russell 2000 ETF</div><div class="fund-name-sm">Russell 2000 Index</div></td><td>US Small Cap Equity</td><td class="wt-cell">6.25%</td><td class="rat-text">Small cap diversification from BPAIX's large-cap tilt. Long-horizon small cap premium and domestic revenue focus complement the value core.</td></tr>
+        <tr><td><span class="tk">EFA</span></td><td><div>iShares MSCI EAFE ETF</div><div class="fund-name-sm">MSCI EAFE Index</div></td><td>International Developed Markets</td><td class="wt-cell">6.25%</td><td class="rat-text">Developed international exposure. Europe and Japan valuations remain compelling relative to US on most metrics.</td></tr>
+        <tr><td><span class="tk">IEMG</span></td><td><div>iShares Core MSCI EM ETF</div><div class="fund-name-sm">MSCI EM IMI Index</div></td><td>Emerging Markets</td><td class="wt-cell">6.25%</td><td class="rat-text">Low-cost EM at 0.09% ER. India and SE Asia demographic and technology growth story is a compelling 10-year secular backdrop.</td></tr>
+        <tr><td><span class="tk">VOLT</span></td><td><div>Tema Electrification ETF</div><div class="fund-name-sm">Electrification Theme</div></td><td>Electrification / Power Grid</td><td class="wt-cell">6.25%</td><td class="rat-text">Structural infrastructure theme. AI data center power demand adds a technology catalyst to the electrification thesis.</td></tr>
+        <tr><td><span class="tk">ROBO</span></td><td><div>ROBO Global Robotics &amp; Automation ETF</div><div class="fund-name-sm">ROBO Global Index</div></td><td>Robotics &amp; Automation</td><td class="wt-cell">6.25%</td><td class="rat-text">Industrial automation accelerating as labor costs rise and manufacturers reshore. Long-runway secular theme.</td></tr>
+        <tr><td><span class="tk">XBI</span></td><td><div>SPDR S&amp;P Biotech ETF</div><div class="fund-name-sm">S&amp;P Biotech Select Industry</div></td><td>Biotech &amp; Life Sciences</td><td class="wt-cell">6.25%</td><td class="rat-text">Durable 10+ year healthcare innovation theme. Equal-weight structure provides balanced biotech exposure without single-name concentration.</td></tr>
+        <tr><td><span class="tk">XPH</span></td><td><div>SPDR S&amp;P Pharmaceuticals ETF</div><div class="fund-name-sm">S&amp;P Pharmaceuticals Select Industry</div></td><td>Pharmaceuticals</td><td class="wt-cell">6.25%</td><td class="rat-text">Defensive healthcare complement to XBI. GLP-1 pipeline and aging demographics support multi-year large-cap pharma revenue growth.</td></tr>
+        <tr><td><span class="tk">GLD</span></td><td><div>SPDR Gold Shares</div><div class="fund-name-sm">Gold Spot Price</div></td><td>Gold — Tail Hedge</td><td class="wt-cell">6.25%</td><td class="rat-text">Inflation hedge and stabilizer. Central bank gold accumulation and de-dollarization trends provide structural demand support.</td></tr>
+        <tr class="total-row"><td colspan="3">TOTAL</td><td class="wt-cell">100.0%</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section-label mg">Fund Selection Review</div>
+  <div class="fund-grid" id="cards-mg"></div>
+  <div class="section-label mg">Monitoring Signals</div>
+  <div class="signals-grid" id="signals-mg"></div>
+</div>
+
+<div class="panel ig" id="panel-ig">
+  <div class="section-label ig">Holdings</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden">
+    <table class="holdings-table">
+      <thead><tr><th>Ticker</th><th>Fund Name</th><th>Theme / Asset Class</th><th style="text-align:right">Weight</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tk">PIMIX</span></td><td><div>PIMCO Income Fund</div><div class="fund-name-sm">Institutional Class</div></td><td>Core Fixed Income — Active</td><td class="wt-cell">25.0%</td><td class="rat-text">Primary income anchor. PIMCO's active management navigates credit cycles and duration risk dynamically — generating real income in the current 4-5% rate environment.</td></tr>
+        <tr><td><span class="tk">BPAIX</span></td><td><div>Boston Partners All-Cap Value Fund</div><div class="fund-name-sm">Institutional Class</div></td><td>Active All-Cap Value — Core Equity</td><td class="wt-cell">35.0%</td><td class="rat-text">Right fund in the right strategy. BPAIX's quality-value discipline naturally tilts toward dividend-payers and financially sound compounders — ideal for an income and growth mandate.</td></tr>
+        <tr><td><span class="tk">DODIX</span></td><td><div>Dodge &amp; Cox Income Fund</div><div class="fund-name-sm">Institutional Class</div></td><td>Core Fixed Income — Active</td><td class="wt-cell">25.0%</td><td class="rat-text">Complementary fixed income anchor alongside PIMIX. Dodge &amp; Cox's value-oriented approach to IG bond selection provides manager diversification — different process from PIMCO's macro-driven approach.</td></tr>
+        <tr><td><span class="tk">IWM</span></td><td><div>iShares Russell 2000 ETF</div><div class="fund-name-sm">Russell 2000 Index</div></td><td>US Small Cap Equity</td><td class="wt-cell">1.875%</td><td class="rat-text">Small cap domestic equity adds growth tilt. IEMG handles international diversification, making IWM the more additive diversifier here.</td></tr>
+        <tr><td><span class="tk">EFA</span></td><td><div>iShares MSCI EAFE ETF</div><div class="fund-name-sm">MSCI EAFE Index</div></td><td>International Developed Markets</td><td class="wt-cell">1.875%</td><td class="rat-text">Modest international developed exposure. Sized small to avoid disrupting the income-oriented mandate.</td></tr>
+        <tr><td><span class="tk">IEMG</span></td><td><div>iShares Core MSCI EM ETF</div><div class="fund-name-sm">MSCI EM IMI Index</div></td><td>Emerging Markets</td><td class="wt-cell">1.875%</td><td class="rat-text">Minimal EM growth exposure at low cost. Long-horizon demographic growth tilt without disrupting the conservative income profile.</td></tr>
+        <tr><td><span class="tk">VOLT</span></td><td><div>Tema Electrification ETF</div><div class="fund-name-sm">Electrification Theme</div></td><td>Electrification / Power Grid</td><td class="wt-cell">1.875%</td><td class="rat-text">Small thematic position. Adds long-horizon growth diversification without materially impacting the portfolio's risk profile.</td></tr>
+        <tr><td><span class="tk">ROBO</span></td><td><div>ROBO Global Robotics &amp; Automation ETF</div><div class="fund-name-sm">ROBO Global Index</div></td><td>Robotics &amp; Automation</td><td class="wt-cell">1.875%</td><td class="rat-text">Minimal automation exposure for long-horizon growth optionality. Relevant even at a small satellite weight.</td></tr>
+        <tr><td><span class="tk">XBI</span></td><td><div>SPDR S&amp;P Biotech ETF</div><div class="fund-name-sm">S&amp;P Biotech Select Industry</div></td><td>Biotech &amp; Life Sciences</td><td class="wt-cell">1.875%</td><td class="rat-text">Small healthcare innovation tilt. Highest-beta holding in this sleeve — sized conservatively to provide thematic exposure without disrupting the income profile.</td></tr>
+        <tr><td><span class="tk">XPH</span></td><td><div>SPDR S&amp;P Pharmaceuticals ETF</div><div class="fund-name-sm">S&amp;P Pharmaceuticals Select Industry</div></td><td>Pharmaceuticals</td><td class="wt-cell">1.875%</td><td class="rat-text">Defensive healthcare most consistent with income and growth mandate. Large-cap pharma dividend yields complement the fixed income anchor.</td></tr>
+        <tr><td><span class="tk">GLD</span></td><td><div>SPDR Gold Shares</div><div class="fund-name-sm">Gold Spot Price</div></td><td>Gold — Inflation Hedge</td><td class="wt-cell">1.875%</td><td class="rat-text">Most defensible gold allocation across all three strategies. Inflation protection and drawdown hedging most consistent with a conservative income and growth mandate.</td></tr>
+        <tr class="total-row"><td colspan="3">TOTAL</td><td class="wt-cell">100.0%</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section-label ig">Fund Selection Review</div>
+  <div class="fund-grid" id="cards-ig"></div>
+  <div class="section-label ig">Monitoring Signals</div>
+  <div class="signals-grid" id="signals-ig"></div>
+</div>
+
+<div class="panel bench" id="panel-bench">
+  <div class="section-label bench">Bench Holdings</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;overflow:hidden">
+    <table class="holdings-table">
+      <thead><tr><th>Ticker</th><th>Fund Name</th><th>Theme / Asset Class</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tk">REMX</span></td><td><div>VanEck Rare Earth/Strategic Metals ETF</div><div class="fund-name-sm">MVIS Global Rare Earth/Strategic Metals Index</div></td><td>Critical Minerals &amp; Rare Earths</td><td class="rat-text">Critical minerals underpinning EV, defense, and semiconductor supply chains. Compelling thematic but small AUM and concentration risk warrant bench status.</td></tr>
+        <tr><td><span class="tk">SMH</span></td><td><div>VanEck Semiconductor ETF</div><div class="fund-name-sm">MVIS US Listed Semiconductor 25 Index</div></td><td>Semiconductors</td><td class="rat-text">AI infrastructure is impossible without semis — NVDA, TSMC, ASML, AVGO. Strong candidate for the Growth sleeve. Most important thematic gap in the current portfolios.</td></tr>
+        <tr><td><span class="tk">SOXX</span></td><td><div>iShares Semiconductor ETF</div><div class="fund-name-sm">ICE Semiconductor Index</div></td><td>Semiconductors (US-Focused)</td><td class="rat-text">Alternative to SMH with more US-centric methodology. Either SMH or SOXX — not both. SMH preferred for TSMC/ASML exposure; SOXX for pure US semi concentration.</td></tr>
+        <tr><td><span class="tk">NLR</span></td><td><div>VanEck Uranium + Nuclear Energy ETF</div><div class="fund-name-sm">MVIS Global Uranium &amp; Nuclear Energy Index</div></td><td>Nuclear Energy</td><td class="rat-text">AI power demand driving nuclear renaissance. Microsoft, Google, and Amazon have signed nuclear PPAs. Watch for further hyperscaler commitments as the key catalyst.</td></tr>
+        <tr><td><span class="tk">ITA</span></td><td><div>iShares U.S. Aerospace &amp; Defense ETF</div><div class="fund-name-sm">Dow Jones U.S. Select Aerospace &amp; Defense Index</div></td><td>Aerospace &amp; Defense</td><td class="rat-text">Defense spending structurally elevated — NATO commitments, Ukraine conflict, US-China competition. Low correlation to existing holdings makes it a strong diversifying add.</td></tr>
+        <tr><td><span class="tk">ARKX</span></td><td><div>ARK Space Exploration &amp; Innovation ETF</div><div class="fund-name-sm">ARK Invest — Active</div></td><td>Space Exploration &amp; Innovation</td><td class="rat-text">Active ARK fund targeting space infrastructure, satellite technology, and aerospace innovation. High-risk, high-reward thematic with a long payback horizon.</td></tr>
+        <tr><td><span class="tk">CSRE</span></td><td><div>Cohen &amp; Steers Real Estate Active ETF</div><div class="fund-name-sm">Cohen &amp; Steers — Active</div></td><td>Real Estate — Active REIT</td><td class="rat-text">Actively managed REIT ETF from one of the most specialized real estate investment managers globally. Cohen &amp; Steers tilts toward infrastructure-adjacent real estate — data centers, cell towers, industrial logistics — while avoiding heavy Tier 1 office and retail CRE concentration. Active management allows dynamic repositioning as the rate normalization cycle plays out.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section-label bench">Fund Selection Review</div>
+  <div class="fund-grid" id="cards-bench"></div>
+  <div class="section-label bench">Monitoring Signals</div>
+  <div class="signals-grid" id="signals-bench"></div>
+</div>
+
+</div>
+<script>
+var ACCENT = {ag:"active-ag",mg:"active-mg",ig:"active-ig",bench:"active-bench"};
+function switchPanel(id,btn){
+  document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".snav-tab").forEach(function(t){Object.values(ACCENT).forEach(function(c){t.classList.remove(c);});});
+  document.getElementById("panel-"+id).classList.add("active");
+  btn.classList.add(ACCENT[id]);
+}
+document.getElementById("live-date").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+var FUNDS = {
+  QQQ:{name:"Invesco QQQ Trust",theme:"US Mega-Cap Growth",er:"0.20%",aum:"~$280B",
+    bull:"QQQ concentrates in the dominant secular compounders of the AI era — NVDA, MSFT, AAPL, and META — whose earnings growth is structurally supported by cloud adoption, AI monetization, and digital advertising. Over 10+ year horizons, owning the highest-quality, fastest-growing businesses in the world has historically been the right call.",
+    bear:"Concentration in the Mag 7 (~45% of the index) means a valuation reset in mega-cap tech would hit hard. The Nasdaq-100 has experienced 80%+ drawdowns (2000-02) and 35%+ drawdowns (2022) — a true test of conviction for younger clients who have never experienced a prolonged tech bear market."},
+  BPAIX:{name:"Boston Partners All-Cap Value Fund (Institutional)",theme:"Active All-Cap Value",er:"0.84%",aum:"~$4B",
+    bull:"Boston Partners applies a rigorous three-factor quality screen — attractive valuation, strong business fundamentals, and positive momentum — consistently applied across market cap sizes. Long-term track record demonstrates genuine alpha generation in a crowded active management space.",
+    bear:"Value has chronically underperformed growth for 15+ years. Active management at 0.84% ER is a meaningful hurdle. In a continued growth-led market, BPAIX will likely lag a low-cost passive growth index."},
+  IWM:{name:"iShares Russell 2000 ETF",theme:"US Small Cap",er:"0.19%",aum:"~$60B",
+    bull:"Small caps have historically outperformed large caps over rolling 10-year periods, particularly following rate normalization cycles. Domestic revenue orientation buffers against USD strength. Reshoring trends are incremental tailwinds.",
+    bear:"The Russell 2000 contains approximately 30% unprofitable companies. Small caps are more sensitive to credit conditions and tend to underperform during prolonged high-rate environments."},
+  EFA:{name:"iShares MSCI EAFE ETF",theme:"International Developed",er:"0.32%",aum:"~$55B",
+    bull:"International developed markets trade at significant valuation discounts to the US. European defense spending acceleration and Japanese corporate governance reforms are structural catalysts. Currency diversification benefits accrue over long horizons.",
+    bear:"EAFE has chronically underperformed US equities for 15+ years. Structural headwinds include energy disadvantage, demographic decline, less technology exposure, and political fragmentation in Europe."},
+  IEMG:{name:"iShares Core MSCI EM ETF",theme:"Emerging Markets",er:"0.09%",aum:"~$80B",
+    bull:"IEMG at 0.09% ER captures the full EM opportunity set — large, mid, and small cap — including the India growth decade. India demographics, digital infrastructure buildout, and manufacturing shift from China are compelling long-horizon stories.",
+    bear:"China represents ~25% of the index and carries geopolitical, regulatory, and currency risk. Small cap EM holdings are illiquid and can gap down significantly in risk-off environments."},
+  VOLT:{name:"Tema Electrification ETF",theme:"Electrification",er:"0.75%",aum:"~$50M",
+    bull:"Electrification is a multi-decade infrastructure mega-trend — EV adoption, grid modernization, and AI data center power demand are structurally driving electricity consumption growth for decades. The IRA and global energy transition policy backstop the investment cycle.",
+    bear:"AUM below $100M creates real fund closure risk. Policy reversals on clean energy subsidies could disrupt the investment thesis. High ER at 0.75% is a drag relative to alternatives like GRID or ICLN."},
+  ROBO:{name:"ROBO Global Robotics & Automation ETF",theme:"Robotics & Automation",er:"0.95%",aum:"~$1.2B",
+    bull:"Automation is one of the most durable secular tailwinds — rising global labor costs, manufacturing reshoring, and AI-enabled industrial intelligence create a multi-decade demand curve for robots and automation systems.",
+    bear:"High ER at 0.95% is a significant drag on compounding over 10+ years. ROBO has underperformed BOTZ and other robotics peers historically."},
+  XBI:{name:"SPDR S&P Biotech ETF",theme:"Biotech & Life Sciences",er:"0.35%",aum:"~$7B",
+    bull:"GLP-1 is a once-in-a-generation drug platform. CRISPR gene editing, cell therapy, and AI-accelerated drug discovery represent multiple simultaneous innovation cycles. Equal-weight structure means early-stage biotech upside is meaningful.",
+    bear:"Equal-weight structure creates heavy small and micro-cap biotech exposure — many holdings are pre-revenue with binary FDA outcomes. XBI can swing 30-50% in both directions over 12-month periods."},
+  XPH:{name:"SPDR S&P Pharmaceuticals ETF",theme:"Pharmaceuticals",er:"0.35%",aum:"~$300M",
+    bull:"Aging demographics drive pharmaceutical demand globally. GLP-1 pipeline strength (LLY, NVO) and the industry pricing power in therapeutic categories without generic competition support durable earnings growth.",
+    bear:"XPH has ~30-40% holdings overlap with XBI, creating redundancy. Small AUM (~$300M) raises liquidity concerns. Pharma is a more defensive, lower-growth sector."},
+  GLD:{name:"SPDR Gold Shares",theme:"Gold / Tail Hedge",er:"0.40%",aum:"~$80B+",
+    bull:"Central bank gold buying by EM central banks has accelerated dramatically since 2022. De-dollarization of global trade creates a multi-decade tailwind. Gold has historically preserved purchasing power across currency crises.",
+    bear:"Gold generates no earnings and pays no income — over any 10+ year period, it will almost certainly underperform a diversified equity portfolio. Appropriate only as a tail-risk hedge."},
+  PIMIX:{name:"PIMCO Income Fund (Institutional)",theme:"Core Fixed Income",er:"0.50%",aum:"~$150B",
+    bull:"PIMCO Income has a proven track record of navigating credit cycles, managing duration dynamically, and generating income across rate environments. In the current 4-5% rate regime, generating real income for the first time in over a decade.",
+    bear:"Active bond management at 0.50% ER adds fee drag vs. passive alternatives like AGG at 0.03%. Duration management errors in a volatile rate environment can lead to meaningful NAV drawdowns."},
+  DODIX:{name:"Dodge & Cox Income Fund (Institutional)",theme:"Core Fixed Income",er:"0.41%",aum:"~$70B",
+    bull:"Dodge & Cox Income applies the same disciplined, value-oriented approach to fixed income that the firm uses in equities — buying undervalued IG bonds with improving credit fundamentals. One of the best 20-year track records in active fixed income.",
+    bear:"Dodge & Cox is a pure investment grade manager — no meaningful high yield or EM debt. In a credit rally environment, the fund may lag peers with more aggressive mandates. Value discipline can lead to early positioning that takes time to pay off."},
+  VTV:{name:"Vanguard Value ETF",theme:"US Large Cap Value — Passive",er:"0.04%",aum:"~$120B",
+    bull:"At 0.04% ER, VTV delivers broad US large-cap value exposure at virtually no cost — a 0.80% annual fee advantage over BPAIX. Holds 340+ value-tilted large caps benefiting from a normalizing rate environment.",
+    bear:"Passive value has no quality screen — VTV owns every large-cap value stock regardless of business quality or balance sheet health. In a deteriorating credit cycle, the absence of a quality filter can lead to value trap exposure."},
+  REMX:{name:"VanEck Rare Earth/Strategic Metals ETF",theme:"Critical Minerals & Rare Earths",er:"0.57%",aum:"~$500M",
+    bull:"Rare earths and critical minerals underpin the energy transition and defense modernization — EV batteries, wind turbines, semiconductors, and precision weapons all require them. Supply chain deglobalization creates structural demand/supply imbalance.",
+    bear:"China controls 60-70%+ of rare earth processing globally. Small AUM and illiquid underlying holdings make REMX volatile and subject to significant tracking error."},
+  SMH:{name:"VanEck Semiconductor ETF",theme:"Semiconductors",er:"0.35%",aum:"~$25B",
+    bull:"Semiconductors are the foundational infrastructure of the AI era. NVDA, TSMC, ASML, and AVGO are among the highest-quality, most durable businesses in global markets. The AI buildout capex cycle has years of runway ahead.",
+    bear:"Semiconductors are notoriously cyclical — inventory gluts can cause 40-60% corrections even in structurally growing markets. US-China chip export restrictions create ongoing geopolitical risk."},
+  SOXX:{name:"iShares Semiconductor ETF",theme:"Semiconductors (US-Focused)",er:"0.35%",aum:"~$12B",
+    bull:"Alternative semi exposure with more US-centric index methodology. Useful if you want to underweight TSMC and ASML geopolitical risk while maintaining semiconductor thematic exposure.",
+    bear:"More US-concentrated than SMH means higher domestic policy and trade war exposure. If the thesis is global AI infrastructure buildout, excluding TSMC is a significant omission."},
+  NLR:{name:"VanEck Uranium + Nuclear Energy ETF",theme:"Nuclear Energy",er:"0.61%",aum:"~$500M",
+    bull:"Microsoft, Google, Amazon, and Oracle have signed nuclear power purchase agreements to power AI data centers. Small modular reactors are moving from concept to permitting. Uranium supply is structurally constrained relative to growing demand.",
+    bear:"Nuclear faces a long and uncertain permitting timeline — even the most optimistic SMR projections are 5-8 years to grid contribution. AUM concentration in uranium mining companies adds commodity price volatility."},
+  ITA:{name:"iShares U.S. Aerospace & Defense ETF",theme:"Aerospace & Defense",er:"0.40%",aum:"~$8B",
+    bull:"Defense spending is in a multi-decade structural upcycle — NATO 2% GDP commitment adopted globally. ITA holds RTX, LMT, NOC, and GD — blue-chip defense primes with durable multi-decade contracts.",
+    bear:"Defense spending is subject to political cycles. A shift toward disengagement could reduce demand for new weapons systems. Boeing exposure introduces civilian aerospace cycle volatility."},
+  ARKX:{name:"ARK Space Exploration & Innovation ETF",theme:"Space Exploration",er:"0.75%",aum:"~$200M",
+    bull:"Space is transitioning from a government-funded activity to a commercially driven industry — satellite broadband, launch cost deflation, and space-based analytics are creating real revenue-generating businesses. ARK gives access to early-stage space economy companies before they appear in passive indices.",
+    bear:"ARKX carries ARK trademark high-volatility, high-concentration risk — the fund experienced 70%+ drawdowns from its 2021 peak. Active management at 0.75% ER is a meaningful fee drag. Many holdings are pre-profitability."},
+  CSRE:{name:"Cohen & Steers Real Estate Active ETF",theme:"Active REIT",er:"~0.55%",aum:"~$300M",
+    bull:"Cohen & Steers is one of the most specialized and respected real estate investment managers in the world — this is their core competency, not a side product. The active mandate allows the fund to tilt toward infrastructure-adjacent REITs (data centers, cell towers, industrial logistics, self-storage) that benefit from AI buildout and e-commerce tailwinds, while avoiding structurally impaired Tier 1 office and retail. Active management also allows dynamic repositioning as rate normalization creates dislocation opportunities in rate-sensitive real estate.",
+    bear:"Active management at ~0.55% ER adds fee drag vs. passive REIT alternatives like VNQ at 0.12%. CSRE is relatively small (~$300M AUM) — not a closure risk, but liquidity in the underlying real estate holdings can be constrained in risk-off environments. All REITs remain sensitive to interest rate direction — any sustained reversal in rate normalization would pressure the entire asset class regardless of active management quality."},
+};
+
+var SIGNALS = {
+  QQQ:[
+    {type:"watch",title:"Mag 7 Earnings Growth Rate",text:"Monitor quarterly earnings growth for the top 7 holdings. Target 15%+ YoY to justify current valuations. Deceleration below 10% for two consecutive quarters is an inflection signal to reassess core weighting."},
+    {type:"watch",title:"Forward P/E vs. 10-Year Average",text:"QQQ forward P/E relative to its 10-year historical average (~22x). Flag if sustained above 30x without corresponding earnings acceleration — indicates valuation expansion risk rather than earnings-driven appreciation."},
+    {type:"risk",title:"Federal Reserve Rate Trajectory",text:"Long-duration growth stocks are sensitive to the long end of the yield curve. A sustained move in the 10-year Treasury above 5.5% would pressure QQQ valuation multiple meaningfully."},
+    {type:"confirm",title:"AI Capex Cycle from Hyperscalers",text:"Quarterly capex disclosures from Microsoft, Google, Amazon, and Meta are the leading demand signal for Nasdaq-100 earnings. Sustained capex acceleration confirms the AI monetization thesis underpinning the premium valuation."}
+  ],
+  BPAIX:[
+    {type:"watch",title:"Net-of-Fee Alpha vs. Russell 1000 Value",text:"Annually benchmark BPAIX 3-year and 5-year net-of-fee return vs. IWD or VTV (passive value, 0.04% ER). Persistent underperformance net of fees (0.84% ER) is a signal to replace with VTV from the bench list."},
+    {type:"confirm",title:"Active Share and Portfolio Differentiation",text:"Monitor BPAIX active share vs. Russell 1000 Value — a reading above 70% confirms the manager is taking meaningful active positions rather than hugging the benchmark. Declining active share reduces the justification for the active fee."},
+    {type:"risk",title:"Value Factor Performance Cycle",text:"Value has underperformed growth for 15+ years. Monitor the value/growth factor spread on a rolling 3-year basis. Sustained growth factor outperformance >5% annualized warrants reviewing whether the value anchor is appropriate."},
+    {type:"watch",title:"Manager Continuity",text:"Boston Partners All-Cap Value has key-person dependency on its lead portfolio managers. Monitor for any portfolio manager departures, firm ownership changes, or strategy mandate modifications."}
+  ],
+  IWM:[
+    {type:"watch",title:"Federal Reserve Rate Cuts",text:"Small caps are disproportionately funded by floating-rate debt — rate normalization materially reduces interest burden for Russell 2000 companies. Monitor Fed dot plot for timing and depth of future cuts."},
+    {type:"confirm",title:"Reshoring and Domestic Capex Data",text:"US manufacturing construction spending and industrial capex confirm or disrupt the reshoring thesis. CHIPS Act and IRA spending are key indicators — acceleration of domestic factory construction benefits small cap industrials."},
+    {type:"risk",title:"Profitability Mix in Russell 2000",text:"Approximately 30% of Russell 2000 constituents are unprofitable. Monitor the percentage of profitable companies quarterly — deterioration during credit tightening signals elevated default risk."},
+    {type:"watch",title:"Small Cap vs. Large Cap Relative Performance",text:"Track rolling 3-year and 5-year return differential between IWM and SPY. Persistent large-cap outperformance (>5% annualized) may warrant reviewing the small cap allocation size."}
+  ],
+  EFA:[
+    {type:"watch",title:"EUR/USD and JPY/USD Exchange Rates",text:"EFA returns in USD are significantly impacted by currency movements. A sustained USD strengthening cycle (DXY above 108) reduces USD-denominated returns materially — monitor currency trends quarterly."},
+    {type:"confirm",title:"European Defense Spending Acceleration",text:"NATO 2% GDP defense commitment and individual country budget increases are a structural catalyst for European industrial and defense stocks. Quarterly government budget announcements are key data points."},
+    {type:"risk",title:"European Energy and Industrial Competitiveness",text:"Europe structural energy cost disadvantage relative to the US and China continues to weigh on manufacturing competitiveness. Monitor European industrial PMI — sustained readings below 48 indicate competitive deterioration."},
+    {type:"watch",title:"Japan Corporate Governance Reforms",text:"Tokyo Stock Exchange reforms requiring companies to improve ROE and capital efficiency are unlocking value in Japanese equities. Monitor reform implementation progress and corporate buyback activity."}
+  ],
+  IEMG:[
+    {type:"confirm",title:"India GDP Growth and Digital Economy",text:"India is the primary bull case within IEMG. Monitor quarterly GDP growth (target 6.5%+), UPI digital payment volume, and IT services sector revenue growth as proxies for structural momentum."},
+    {type:"risk",title:"US-China Trade Policy and Tariff Regime",text:"China represents ~25% of IEMG. Any escalation in US-China trade tensions — new tariffs, technology export controls, or financial market restrictions — creates direct negative impact on IEMG China sleeve."},
+    {type:"watch",title:"USD Strength (DXY Index)",text:"A strengthening US dollar is the single largest headwind for EM returns in USD terms. Monitor DXY quarterly — sustained strength above 105 typically correlates with EM underperformance vs. US equities."},
+    {type:"watch",title:"EM Central Bank Rate Differentials",text:"Monitor EM central bank policy rates relative to the Fed. Widening EM-US rate differentials attract capital flows into EM fixed income and currencies, supporting EM equity performance."}
+  ],
+  VOLT:[
+    {type:"risk",title:"Fund AUM and Viability",text:"VOLT AUM remains near ~$50M — below the $100M threshold where closure risk becomes acute. Monitor AUM monthly. If AUM falls below $30M, begin planning a transition to GRID or ICLN to avoid forced redemption."},
+    {type:"confirm",title:"AI Data Center Power Demand Growth",text:"Hyperscaler quarterly reports (Microsoft, Google, Amazon, Meta) disclose power infrastructure investment plans. Accelerating data center power demand directly validates the electrification and grid investment thesis."},
+    {type:"watch",title:"IRA and Clean Energy Policy Durability",text:"US clean energy subsidies under the Inflation Reduction Act are a primary demand driver for electrification infrastructure investment. Monitor Congressional budget negotiations and any proposed IRA modifications."},
+    {type:"watch",title:"EV Adoption Rate vs. Projections",text:"Global EV sales data (monthly IEA or BloombergNEF reports) tracks the pace of electrification adoption. Sustained shortfalls vs. projections would reduce urgency of grid upgrade investment."}
+  ],
+  ROBO:[
+    {type:"confirm",title:"Humanoid Robotics Commercialization Milestones",text:"Tesla Optimus, Figure AI, and Boston Dynamics commercial deployment announcements are leading indicators of the next robotics adoption wave. Track production cost reductions and enterprise pilot programs."},
+    {type:"confirm",title:"Manufacturing Reshoring Capex Data",text:"US industrial construction spending and factory capex announcements validate domestic automation demand. Foreign direct investment announcements for US manufacturing facilities are secondary signals."},
+    {type:"watch",title:"Global Labor Cost Inflation",text:"Wage inflation data across key manufacturing economies (US, Germany, China, Mexico) drives the ROI case for automation adoption. Higher wage growth accelerates payback periods for robotic systems."},
+    {type:"risk",title:"Expense Ratio vs. Peer Alternatives",text:"ROBO charges ~0.95% ER vs. BOTZ at ~0.68% for comparable exposure. Annually review net-of-fee performance vs. BOTZ — persistent underperformance net of fees is a signal to evaluate a swap."}
+  ],
+  XBI:[
+    {type:"confirm",title:"FDA Approval Rate and Pipeline Throughput",text:"Quarterly FDA PDUFA dates for top XBI holdings are binary events. Monitor overall industry approval rates — accelerating approvals signal a favorable regulatory environment that lifts the entire biotech innovation cycle."},
+    {type:"confirm",title:"Large-Cap Pharma M&A Activity",text:"Acquisitions of biotech companies by large-cap pharma (Pfizer, AbbVie, Merck, BMS) validate pipeline values and signal inflection in biotech valuations. A surge in M&A premiums is a strong bull signal for XBI."},
+    {type:"watch",title:"GLP-1 Next-Generation Pipeline Data",text:"Clinical trial results for next-gen GLP-1 drugs (oral formulations, CNS indications, combination therapies) represent the single largest TAM expansion opportunity in biotech. Monitor Phase 2 and Phase 3 readouts from LLY, NVO, and emerging challengers."},
+    {type:"risk",title:"Interest Rate Sensitivity",text:"Biotech companies are long-duration equities — their value is heavily weighted to distant future cash flows. Rising long-term interest rates pressure biotech valuations disproportionately vs. the broader market."}
+  ],
+  XPH:[
+    {type:"confirm",title:"GLP-1 Indication Expansion",text:"FDA approvals expanding GLP-1 drugs into new indications (heart failure, sleep apnea, metabolic dysfunction) dramatically expand the addressable market for Eli Lilly and Novo Nordisk — the two largest XPH holdings."},
+    {type:"watch",title:"Drug Pricing Policy",text:"Congressional action on Medicare drug price negotiation (IRA implementation) and any proposed pharmacy benefit reform directly impacts large-cap pharma margins. Monitor legislative calendar for pricing-related bills."},
+    {type:"watch",title:"Patent Cliff Exposure",text:"Track patent expiration schedules for top XPH holdings. Companies with major drugs losing exclusivity in the next 3-5 years face significant revenue replacement risk — monitor pipeline fill rate vs. patent cliff exposure."},
+    {type:"risk",title:"Overlap with XBI",text:"XPH and XBI share approximately 30-40% of holdings. Monitor combined healthcare weighting across the portfolio — if both are held at full weight, healthcare may represent a concentrated sector bet."}
+  ],
+  GLD:[
+    {type:"confirm",title:"Central Bank Gold Purchases",text:"World Gold Council publishes quarterly central bank demand data. EM central banks (China PBoC, India RBI, Turkey, Poland) have been structurally accumulating gold since 2022 — sustained buying above 500 tonnes/quarter confirms the de-dollarization demand floor."},
+    {type:"watch",title:"Real Yield Trajectory (10-Year TIPS)",text:"The 10-year TIPS yield is the single best predictor of gold price direction. Negative real yields are structurally bullish for gold; rising real yields are the primary headwind. Monitor monthly."},
+    {type:"watch",title:"USD Index (DXY)",text:"Gold is priced in USD — a strengthening dollar creates a direct headwind for gold prices. Monitor DXY directional trend; sustained USD weakness is a secondary tailwind for gold returns."},
+    {type:"risk",title:"Opportunity Cost vs. Equities",text:"Over 10+ year horizons, gold will almost certainly underperform a diversified equity portfolio. Annually review the gold allocation relative to the strategy return objective — size should reflect its hedge purpose, not a return conviction."}
+  ],
+  PIMIX:[
+    {type:"watch",title:"Portfolio Duration vs. Yield Curve Shape",text:"Monitor PIMCO Income reported duration (disclosed in monthly fund commentary) relative to the shape of the yield curve. Extended duration in a flattening or inverting curve environment creates NAV drawdown risk."},
+    {type:"watch",title:"Credit Spread Widening",text:"Investment grade and high yield credit spreads (ICE BofA indices) are the leading indicator of PIMIX credit portfolio stress. Spreads widening above 200bps (HY) or 150bps (IG) signal risk-off positioning is warranted."},
+    {type:"confirm",title:"Net-of-Fee Alpha vs. AGG",text:"Annually benchmark PIMIX net-of-fee total return vs. iShares AGG (core bond index, 0.03% ER). If PIMCO consistently fails to generate alpha net of its 0.50% ER, passive core bond exposure is the appropriate replacement."},
+    {type:"risk",title:"PIMCO Organizational Risk",text:"PIMCO 2014 management departure (Bill Gross) caused significant outflows and performance disruption. Monitor for key portfolio manager departures or organizational changes that could affect strategy continuity."}
+  ],
+  DODIX:[
+    {type:"confirm",title:"Net-of-Fee Alpha vs. Bloomberg US Agg",text:"Annually benchmark DODIX net-of-fee return vs. AGG (0.03% ER). Dodge & Cox Income has historically generated meaningful alpha through credit selection — confirm this persists. If alpha disappears for 3+ consecutive years, a passive alternative (VBILX) is the appropriate replacement."},
+    {type:"watch",title:"Investment Grade Credit Spread Environment",text:"DODIX is a pure IG fund — its alpha comes from credit selection within investment grade. Monitor IG spreads (ICE BofA US Corp index) monthly. Tightening spreads reduce the opportunity set; widening spreads create the dislocations Dodge & Cox historically exploits."},
+    {type:"watch",title:"Duration Positioning vs. Rate Outlook",text:"Dodge & Cox actively manages duration — monitor their published duration vs. the Bloomberg Agg benchmark. If they are running significantly short or long vs. benchmark, understand the rate view implied."},
+    {type:"risk",title:"Correlation with PIMIX",text:"DODIX and PIMIX are both active IG-focused fixed income funds held in the same sleeve. Monitor rolling 12-month correlation between the two — if correlation exceeds 0.90, the manager diversification benefit diminishes."}
+  ],
+  VTV:[
+    {type:"watch",title:"Value vs. Growth Factor Spread",text:"Track the rolling 3-year and 5-year return differential between VTV and VUG. When value closes the performance gap vs. growth for sustained periods, it validates the diversification case for a value anchor."},
+    {type:"confirm",title:"BPAIX Active Alpha Monitoring",text:"VTV primary purpose on the bench is as a low-cost replacement for BPAIX if active alpha disappears. Run an annual net-of-fee comparison: BPAIX total return minus 0.84% vs. VTV total return minus 0.04%."},
+    {type:"watch",title:"Financial Sector Composition",text:"VTV carries heavy financials exposure (~20% of the index). Monitor bank earnings quality, credit quality, and net interest margin trends — financial sector health is the primary driver of VTV relative performance."}
+  ],
+  REMX:[
+    {type:"confirm",title:"US Critical Minerals Policy",text:"Executive orders, DoD contracts, and Congressional legislation on domestic critical mineral supply chains directly validate REMX thesis. The DoD Strategic and Critical Materials stockpile budget is a key indicator."},
+    {type:"risk",title:"China Rare Earth Export Controls",text:"China controls 60-70%+ of rare earth processing. Any Chinese export restrictions would cause extreme volatility in REMX — both upward (supply squeeze narrative) and downward (demand destruction concern). Monitor monthly."},
+    {type:"watch",title:"EV Battery Chemistry Evolution",text:"A shift away from rare-earth-dependent battery chemistries (LFP batteries do not use rare earths) could reduce long-term rare earth demand growth. Track OEM battery chemistry announcements and next-gen battery R&D directions."}
+  ],
+  SMH:[
+    {type:"confirm",title:"AI Hyperscaler Capex Announcements",text:"Quarterly capex disclosures from Microsoft, Google, Amazon, and Meta are the primary demand signal for semiconductor revenue growth. Sustained capex acceleration above $50B/quarter combined confirms the AI buildout cycle is intact."},
+    {type:"risk",title:"US-China Chip Export Restrictions",text:"BIS export control rules affecting NVDA (H100/H200 China sales), ASML (EUV to China), and TSMC (advanced node China production) are existential risk factors for SMH. Monitor BIS rule announcements closely."},
+    {type:"watch",title:"Semiconductor Inventory Cycle",text:"Monitor book-to-bill ratios (SEMI monthly report) and lead time data as leading indicators of the semiconductor demand cycle. Ratios above 1.0 signal excess demand; below 0.9 for consecutive months signals inventory correction."},
+    {type:"watch",title:"TSMC Capacity and Yield Data",text:"TSMC quarterly earnings provide the most comprehensive view of advanced node (3nm, 2nm) utilization rates and customer demand. Revenue guidance changes from TSMC are the most reliable leading indicator for the entire sector."}
+  ],
+  SOXX:[
+    {type:"confirm",title:"CHIPS Act Domestic Manufacturing Progress",text:"Monitor construction progress on TSMC Arizona, Intel Ohio, and Samsung Texas fabs funded by CHIPS Act subsidies. Delays or cost overruns are a negative signal; on-schedule progress validates the domestic semiconductor thesis."},
+    {type:"risk",title:"Intel Turnaround Execution Risk",text:"SOXX has higher Intel weighting than SMH. Intel foundry strategy and process technology recovery are key variables — execution failures would disproportionately impact SOXX vs. SMH."},
+    {type:"watch",title:"AI Chip Demand Cycle",text:"Same AI capex monitoring as SMH. For SOXX specifically, also monitor AMD and Qualcomm earnings guidance as bellwethers for the non-NVDA AI chip opportunity."}
+  ],
+  NLR:[
+    {type:"confirm",title:"Hyperscaler Nuclear Power Agreements",text:"Power purchase agreements between tech companies and nuclear operators (Microsoft/Constellation Three Mile Island restart, Google SMR agreements, Amazon nuclear deals) are the strongest validation of the nuclear thesis."},
+    {type:"confirm",title:"SMR Permitting and Construction Timeline",text:"NRC approval timelines for small modular reactor designs (NuScale, X-energy, TerraPower) are the critical path for nuclear capacity growth. Any approvals or major milestone completions are strong bull signals."},
+    {type:"risk",title:"Uranium Spot Price Volatility",text:"NLR has significant uranium mining company exposure — uranium spot prices (Cameco is the largest holding) drive near-term NAV volatility independently of the nuclear power thesis. Monitor uranium spot monthly."},
+    {type:"watch",title:"Political and Regulatory Sentiment",text:"Nuclear energy permitting is subject to state-level political decisions in addition to federal NRC oversight. Monitor state-level energy policy for nuclear-friendly vs. nuclear-hostile legislative trends."}
+  ],
+  ITA:[
+    {type:"confirm",title:"NATO Defense Budget Commitments",text:"Annual NATO summit communiques and individual country defense budget announcements are the primary demand driver for ITA holdings. Track European defense budget growth rates — Germany, Poland, and the UK are most significant."},
+    {type:"confirm",title:"US Defense Authorization Act (NDAA)",text:"Annual NDAA spending levels and program-specific budget allocations directly drive revenue for Lockheed Martin, RTX, Northrop Grumman, and General Dynamics. Monitor Congressional defense appropriations process."},
+    {type:"watch",title:"Commercial Aerospace Recovery (Boeing)",text:"ITA includes Boeing, adding commercial aerospace cycle exposure to the defense thesis. Monitor Boeing 737 MAX delivery rates and 787 production ramp as leading indicators of commercial aerospace contribution to ITA earnings."},
+    {type:"risk",title:"US Foreign Policy and Engagement Posture",text:"A significant shift toward disengagement or isolationism could reduce pressure on allies to increase defense spending and slow new US weapons program initiation. Monitor administration foreign policy direction annually."}
+  ],
+  ARKX:[
+    {type:"confirm",title:"Commercial Space Launch Cost Trajectory",text:"SpaceX Starship reusability milestones are the single most important driver of the commercial space economy — launch cost deflation unlocks downstream satellite, imaging, and space tourism businesses. Track launch frequency and cost-per-kg-to-orbit data."},
+    {type:"watch",title:"Satellite Broadband Adoption (LEO)",text:"Low-earth orbit satellite broadband penetration rates (Starlink subscriber growth, Amazon Kuiper launch progress) validate the commercial space revenue model. Quarterly Starlink subscriber disclosures from SpaceX are the key data point."},
+    {type:"risk",title:"ARK Active Management and Concentration Risk",text:"ARKX is highly concentrated in a small number of high-conviction positions with significant overlap across ARK funds. Monitor top 10 holdings quarterly — single-stock blowups disproportionately impact NAV. High-turnover approach generates meaningful capital gains distributions."},
+    {type:"watch",title:"Government Space Budget and NASA Contracts",text:"NASA Artemis program funding, DoD space budget allocations, and commercial crew/cargo contract awards directly benefit ARKX holdings. Monitor Congressional appropriations and DoD Space Force budget releases annually."}
+  ],
+  CSRE:[
+    {type:"confirm",title:"Data Center and Cell Tower REIT Performance",text:"Monitor quarterly earnings from Equinox (EQIX), Digital Realty (DLR), American Tower (AMT), and Crown Castle (CCI) — the infrastructure REIT segment Cohen & Steers favors. Revenue growth above 8% YoY in these names confirms the AI-driven demand thesis for infrastructure-adjacent real estate."},
+    {type:"watch",title:"Interest Rate Trajectory and REIT Valuations",text:"REITs are long-duration assets — their valuations are directly tied to interest rate direction. Monitor the 10-year Treasury yield monthly. A sustained move below 4% is the primary catalyst for REIT multiple expansion and the rate normalization recovery thesis."},
+    {type:"confirm",title:"Active Sector Rotation vs. VNQ",text:"Annually compare CSRE sector weightings vs. VNQ (passive REIT benchmark). Confirm Cohen & Steers is meaningfully underweight office and retail vs. the benchmark and overweight data centers, industrial, and cell towers — this differentiation is the core justification for the active fee."},
+    {type:"risk",title:"Office CRE Systemic Risk",text:"Structural office vacancy rates remain elevated in major US cities post-pandemic. Monitor CSRE portfolio exposure to office REITs quarterly — any increase above 5% of fund assets warrants a review. Contagion from office sector stress into broader REIT credit markets is the primary tail risk."}
+  ],
+};
+
+var STRATEGY_FUNDS = {
+  ag:["BPAIX","QQQ","IWM","EFA","IEMG","VOLT","ROBO","XBI","XPH","GLD"],
+  mg:["BPAIX","QQQ","IWM","EFA","IEMG","VOLT","ROBO","XBI","XPH","GLD"],
+  ig:["PIMIX","BPAIX","DODIX","IWM","EFA","IEMG","VOLT","ROBO","XBI","XPH","GLD"],
+  bench:["REMX","SMH","SOXX","NLR","ITA","ARKX","CSRE"]
+};
+
+var builtCards = {};
+var builtSignals = {};
+
+function buildCards(strategy){
+  if(builtCards[strategy]) return;
+  builtCards[strategy] = true;
+  var container = document.getElementById("cards-"+strategy);
+  if(!container) return;
+  STRATEGY_FUNDS[strategy].forEach(function(ticker){
+    var f = FUNDS[ticker];
+    if(!f) return;
+    var card = document.createElement("div");
+    card.className = "fund-card";
+    card.innerHTML =
+      "<div class=\"fund-card-head\">" +
+        "<div><div class=\"fund-card-ticker\">"+ticker+"</div><div class=\"fund-card-name\">"+f.name+"</div></div>" +
+        "<span class=\"fund-theme-tag\">"+f.theme+"</span>" +
+      "</div>" +
+      "<div class=\"fund-bb\">" +
+        "<div class=\"bb-pane bull\"><strong>&#x1F402; Bull Case</strong><p>"+f.bull+"</p></div>" +
+        "<div class=\"bb-pane bear\"><strong>&#x1F43B; Bear Case</strong><p>"+f.bear+"</p></div>" +
+      "</div>" +
+      "<div style=\"padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;\">" +
+        "<div style=\"font-size:10px;color:var(--muted);font-family:var(--font-mono)\">ER: "+f.er+"&nbsp;&nbsp;|&nbsp;&nbsp;AUM: "+f.aum+"</div>" +
+        "<a href=\"https://finance.yahoo.com/quote/"+ticker+"/chart/\" target=\"_blank\" rel=\"noopener noreferrer\" " +
+           "style=\"font-size:11px;font-family:var(--font-mono);font-weight:500;color:var(--text);text-decoration:none;" +
+                  "border:1px solid var(--border);padding:4px 10px;border-radius:2px;background:var(--bg);\" " +
+           "onmouseover=\"this.style.background='var(--surface2)'\" onmouseout=\"this.style.background='var(--bg)'\">View Chart &#x2197;</a>" +
+      "</div>";
+    container.appendChild(card);
+  });
+}
+
+function buildSignals(strategy){
+  if(builtSignals[strategy]) return;
+  builtSignals[strategy] = true;
+  var container = document.getElementById("signals-"+strategy);
+  if(!container) return;
+  var iconMap = {watch:"&#x1F441;",confirm:"&#x2713;",risk:"&#x26A0;"};
+  STRATEGY_FUNDS[strategy].forEach(function(ticker){
+    var sigs = SIGNALS[ticker];
+    if(!sigs) return;
+    var f = FUNDS[ticker];
+    var card = document.createElement("div");
+    card.className = "signal-card";
+    var sigHTML = "";
+    sigs.forEach(function(s){
+      sigHTML += "<div class=\"signal-item\">" +
+        "<div class=\"signal-icon "+s.type+"\">"+iconMap[s.type]+"</div>" +
+        "<div class=\"signal-text\"><strong>"+s.title+"</strong><p>"+s.text+"</p></div>" +
+        "</div>";
+    });
+    card.innerHTML =
+      "<div class=\"signal-card-head\">" +
+        "<span class=\"signal-ticker\">"+ticker+"</span>" +
+        "<span class=\"signal-category\">"+(f?f.theme:"")+"</span>" +
+      "</div>" +
+      "<div class=\"signal-body\">"+sigHTML+"</div>";
+    container.appendChild(card);
+  });
+}
+
+buildCards("ag");
+buildSignals("ag");
+
+document.querySelectorAll(".snav-tab").forEach(function(btn,i){
+  var ids=["ag","mg","ig","bench"];
+  btn.addEventListener("click",function(){
+    buildCards(ids[i]);
+    buildSignals(ids[i]);
+  });
+});
+</script>
+</body>
+</html>
